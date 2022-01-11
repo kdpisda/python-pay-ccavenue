@@ -1,2 +1,3 @@
-# python-pay-ccavenue
+# pay-ccavenue
+
 A simple package to integrate CCAvenue

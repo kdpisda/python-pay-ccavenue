@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "python-pay-ccavenue"
+name = "pay-ccavenue"
 version = "0.1.0"
-description = ""
+description = "A simple library to setup payment integration with CCAvenue"
 authors = ["Kuldeep Pisda <22424149+kdpisda@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
