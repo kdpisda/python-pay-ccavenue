@@ -44,6 +44,7 @@ class CCAvenue:
     }
 
     __response_body = {"encResp": ""}
+    __descrypted_data = {}
 
     def __init__(
         self,
@@ -241,6 +242,18 @@ class CCAvenue:
             self.__response_body = response_body
         return unhexlify(response_body.get("encResp"))
 
+    def unflatten_descrypted_data(self, data: bytearray) -> None:
+        """
+        Unflatten the decrypted data.
+
+        :param data: The decrypted data.
+
+        :return: The unflattened data.
+        """
+        self.__descrypted_data = dict(
+            item.split("=") for item in data.decode("utf-8").split("&") if item
+        )
+
     def decrypt(self, data: dict) -> str:
         """
         Decrypt the data received from CCAvenue.
@@ -251,4 +264,5 @@ class CCAvenue:
         """
         encryptedText = self.parse_response_body(data)
         dec_cipher = self.__get_cipher()
-        return dec_cipher.decrypt(encryptedText).decode("utf-8")
+        self.unflatten_descrypted_data(dec_cipher.decrypt(encryptedText))
+        return self.__descrypted_data
