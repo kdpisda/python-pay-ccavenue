@@ -1,8 +1,18 @@
 [tool.poetry]
 name = "pay_ccavenue"
-version = "0.1.2"
+version = "0.1.3"
 description = "A simple library to setup payment integration with CCAvenue"
-authors = ["Kuldeep Pisda <22424149+kdpisda@users.noreply.github.com>"]
+authors = ["Kuldeep Pisda <pisdak79@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/kdpisda/python-pay-ccavenue"
+repository = "https://github.com/kdpisda/python-pay-ccavenue"
+documentation = "https://github.com/kdpisda/python-pay-ccavenue"
+keywords = ["ccavenue", "payment", "python"]
+classifiers = [
+    "Topic :: Payment Integration :: Libraries :: Python Modules",
+    "Topic :: Payment Integration :: Libraries :: CCAvenue",
+]
 
 [tool.poetry.dependencies]
 python = "^3.8"
