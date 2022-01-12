@@ -1,4 +1,4 @@
-from python_pay_ccavenue import __version__
+from pay_ccavenue import __version__
 
 
 def test_version():
