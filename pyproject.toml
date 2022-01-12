@@ -9,10 +9,6 @@ homepage = "https://github.com/kdpisda/python-pay-ccavenue"
 repository = "https://github.com/kdpisda/python-pay-ccavenue"
 documentation = "https://github.com/kdpisda/python-pay-ccavenue"
 keywords = ["ccavenue", "payment", "python"]
-classifiers = [
-    "Topic :: Payment Integration :: Libraries :: Python Modules",
-    "Topic :: Payment Integration :: Libraries :: CCAvenue",
-]
 
 [tool.poetry.dependencies]
 python = "^3.8"
