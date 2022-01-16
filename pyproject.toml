@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pay_ccavenue"
-version = "0.1.5"
+version = "0.1.6"
 description = "A simple library to setup payment integration with CCAvenue"
 authors = ["Kuldeep Pisda <pisdak79@gmail.com>"]
 license = "MIT"

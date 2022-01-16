@@ -236,7 +236,7 @@ class CCAvenue:
         self.__form_data = {**self.__form_data, **request_body}
         form_str = f"merchant_id={self.__MERCHANT_CODE}"
         for key, value in self.__form_data.items():
-            form_str += "&" + key + "=" + value
+            form_str += "&" + str(key) + "=" + str(value)
         return form_str
 
     def __get_cipher(self) -> AES:
