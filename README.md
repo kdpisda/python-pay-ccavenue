@@ -1,6 +1,6 @@
 # pay_ccavenue
 
-A simple package to integrate CCAvenue.
+A simple package to integrate CCAvenue. It can be used for both `iframe` and `seemless` methods.
 
 ## How to install
 
@@ -60,4 +60,3 @@ decrypted_data = ccavenue.decrypt(form_data)
 
 1. I have not added any tests as of now in the package, but I have tested this out for my project after debugging their given examples and Stackoverflow to simplify it.
 2. More detailed documentation.
-3. Currently supports only Iframe method.
