@@ -25,6 +25,8 @@ Set the credentials in the environment variables
 - Set `CCAVENUE_WORKING_KEY` for the `WORKING_KEY`
 - Set `CCAVENUE_ACCESS_CODE` for the `ACCESS_CODE`
 - Set `CCAVENUE_MERCHANT_CODE` for the `MERCHANT_CODE`
+- Set `CCAVENUE_REDIRECT_URL` for the `REDIRECT_URL`
+- Set `CCAVENUE_CANCEL_URL` for the `CANCEL_URL`
 
 And then instantiate the `CCAvenue` object as shown below
 
@@ -35,8 +37,16 @@ ccavenue = CCAvenue()
 ### Pasing the credentials directly
 
 ```python
-ccavenue = CCAvenue(WORKING_KEY, ACCESS_CODE, MERCHANT_CODE)
+ccavenue = CCAvenue(WORKING_KEY, ACCESS_CODE, MERCHANT_CODE, REDIRECT_URL, CANCEL_URL)
 ```
+
+---
+
+**NOTE**
+
+You don't need to explicitely pass `WORKING_KEY`, `ACCESS_CODE`, `MERCHANT_CODE`, `REDIRECT_URL`, `CANCEL_URL` in the form data for any of the method i.e. `Iframe` or `seemless`.
+
+---
 
 ## To encrypt the data
 

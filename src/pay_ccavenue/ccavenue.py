@@ -10,6 +10,8 @@ class CCAvenue:
     __WORKING_KEY: str = None
     __ACCESS_CODE: str = None
     __MERCHANT_CODE: str = None
+    __REDIRECT_URL: str = None
+    __CANCEL_URL: str = None
     __iv = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
     __form_data = {
         "order_id": "",
@@ -51,6 +53,8 @@ class CCAvenue:
         working_key: str = None,
         access_code: str = None,
         merchant_code: str = None,
+        redirect_url: str = None,
+        cancel_url: str = None,
     ) -> None:
         """
         Initialize the CCAvenue class.
@@ -62,6 +66,8 @@ class CCAvenue:
         self.load_working_key(working_key)
         self.load_access_code(access_code)
         self.load_merchant_code(merchant_code)
+        self.load_redirect_url(redirect_url)
+        self.load_cancel_url(cancel_url)
 
     def load_working_key(self, working_key: str = None) -> None:
         """
@@ -116,6 +122,42 @@ class CCAvenue:
                 "You must provide a merchant code for CCAvenue or set merchant "
                 "code as an environment variable by setting it as CCAVENUE_MERCHANT_CODE."
             )
+
+    def load_redirect_url(self, redirect_url: str) -> None:
+        """
+        Load a redirect url into the CCAvenue class.
+
+        :param redirect_url: The redirect url for the CCAvenue gateway.
+        """
+        if redirect_url:
+            self.__REDIRECT_URL = redirect_url
+        else:
+            self.__REDIRECT_URL = os.environ.get("CCAVENUE_REDIRECT_URL")
+
+        if self.__REDIRECT_URL is None or isinstance(self.__REDIRECT_URL, str) is False:
+            raise ValueError(
+                "You must provide a redirect url for CCAvenue or set redirect url "
+                "as an environment variable by setting it as CCAVENUE_REDIRECT_URL."
+            )
+        self.__form_data["redirect_url"] = self.__REDIRECT_URL
+
+    def load_cancel_url(self, cancel_url: str) -> None:
+        """
+        Load a cancel url into the CCAvenue class.
+
+        :param cancel_url: The cancel url for the CCAvenue gateway.
+        """
+        if cancel_url:
+            self.__CANCEL_URL = cancel_url
+        else:
+            self.__CANCEL_URL = os.environ.get("CCAVENUE_CANCEL_URL")
+
+        if self.__CANCEL_URL is None or isinstance(self.__CANCEL_URL, str) is False:
+            raise ValueError(
+                "You must provide a cancel url for CCAvenue or set cancel url "
+                "as an environment variable by setting it as CCAVENUE_CANCEL_URL."
+            )
+        self.__form_data["cancel_url"] = self.__CANCEL_URL
 
     def pad(self, data: str):
         """
