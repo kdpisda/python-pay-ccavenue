@@ -223,7 +223,7 @@ class CCAvenue:
             self.__form_data["billing_email"] is None
             or isinstance(self.__form_data["billing_email"], str) is False
         ):
-            raise ValueError("You must provide a billing tel for CCAvenue.")
+            raise ValueError("You must provide a billing email for CCAvenue.")
 
     def parse_request_body(self, request_body: dict) -> str:
         """
