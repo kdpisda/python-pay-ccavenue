@@ -2,309 +2,192 @@ import hashlib
 import os
 from binascii import hexlify
 from binascii import unhexlify
+from typing import Any
+from typing import Dict
 
 from Crypto.Cipher import AES
+from pay_ccavenue.models.config import CCavenueConfig
+from pay_ccavenue.models.form import CCavenueFormData
 
 
 class CCAvenue:
-    __WORKING_KEY: str = None
-    __ACCESS_CODE: str = None
-    __MERCHANT_CODE: str = None
-    __REDIRECT_URL: str = None
-    __CANCEL_URL: str = None
-    __iv = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
-    __form_data = {
-        "order_id": "",
-        "currency": "",
-        "amount": "",
-        "redirect_url": "",
-        "cancel_url": "",
-        "language": "",
-        "billing_name": "",
-        "billing_address": "",
-        "billing_city": "",
-        "billing_state": "",
-        "billing_zip": "",
-        "billing_country": "",
-        "billing_tel": "",
-        "billing_email": "",
-        "delivery_name": "",
-        "delivery_address": "",
-        "delivery_city": "",
-        "delivery_state": "",
-        "delivery_zip": "",
-        "delivery_country": "",
-        "delivery_tel": "",
-        "merchant_param1": "",
-        "merchant_param2": "",
-        "merchant_param3": "",
-        "merchant_param4": "",
-        "merchant_param5": "",
-        "integration_type": "",
-        "promo_code": "",
-        "customer_identifier": "",
-    }
+    """Handles CCAvenue payment gateway operations."""
 
-    __response_body = {"encResp": ""}
-    __descrypted_data = {}
+    _IV = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
 
     def __init__(
         self,
-        working_key: str = None,
-        access_code: str = None,
-        merchant_code: str = None,
-        redirect_url: str = None,
-        cancel_url: str = None,
-    ) -> None:
+        working_key=None,
+        access_code=None,
+        merchant_code=None,
+        redirect_url=None,
+        cancel_url=None,
+    ):
         """
-        Initialize the CCAvenue class.
+        Initialize CCAvenue with credentials.
 
-        :param working_key: The working key for the CCAvenue gateway.
-        :param access_code: The access code for the CCAvenue gateway.
-        :param merchant_code: The merchant code for the CCAvenue gateway.
+        Uses provided parameters or falls back to environment variables:
+        - CCAVENUE_WORKING_KEY
+        - CCAVENUE_ACCESS_CODE
+        - CCAVENUE_MERCHANT_CODE
+        - CCAVENUE_REDIRECT_URL
+        - CCAVENUE_CANCEL_URL
         """
-        self.load_working_key(working_key)
-        self.load_access_code(access_code)
-        self.load_merchant_code(merchant_code)
-        self.load_redirect_url(redirect_url)
-        self.load_cancel_url(cancel_url)
+        self.config = CCavenueConfig(
+            working_key=working_key or os.environ.get("CCAVENUE_WORKING_KEY"),
+            access_code=access_code or os.environ.get("CCAVENUE_ACCESS_CODE"),
+            merchant_code=merchant_code or os.environ.get("CCAVENUE_MERCHANT_CODE"),
+            redirect_url=redirect_url or os.environ.get("CCAVENUE_REDIRECT_URL"),
+            cancel_url=cancel_url or os.environ.get("CCAVENUE_CANCEL_URL"),
+        )
+        self.config.validate()
+        self.form_data = CCavenueFormData()
+        self.response_body = {"encResp": ""}
+        self.decrypted_data = {}
 
-    def load_working_key(self, working_key: str = None) -> None:
+    def _get_cipher(self) -> AES:
         """
-        Load a working key into the CCAvenue class.
+        Create and return an AES cipher object.
 
-        :param working_key: The working key for the CCAvenue gateway.
+        Returns:
+            AES: An AES cipher object initialized with the working key and IV.
+
+        Note:
+            This method uses MD5 to hash the working key. While MD5 is not
+            cryptographically secure, it's used here to maintain compatibility
+            with CCAvenue's implementation.
         """
-        if working_key:
-            self.__WORKING_KEY = working_key
-        else:
-            self.__WORKING_KEY = os.environ.get("CCAVENUE_WORKING_KEY")
+        key = hashlib.md5(self.config.working_key.encode()).digest()
+        return AES.new(key, AES.MODE_CBC, self._IV)
 
-        if self.__WORKING_KEY is None or isinstance(self.__WORKING_KEY, str) is False:
-            raise ValueError(
-                "You must provide a working key for CCAvenue or set working key as "
-                "an environment variable by setting it as CCAVENUE_WORKING_KEY."
-            )
-
-    def load_access_code(self, access_code: str = None) -> None:
+    def _pad(self, data: str) -> str:
         """
-        Load an access code into the CCAvenue class.
+        Pad the input data to be a multiple of 16 bytes.
 
-        :param access_code: The access code for the CCAvenue gateway.
-        """
-        if access_code:
-            self.__ACCESS_CODE = access_code
-        else:
-            self.__ACCESS_CODE = os.environ.get("CCAVENUE_ACCESS_CODE")
+        Args:
+            data (str): The data to be padded.
 
-        if self.__ACCESS_CODE is None or isinstance(self.__ACCESS_CODE, str) is False:
-            raise ValueError(
-                "You must provide an access code for CCAvenue or set access code "
-                "as an environment variable by setting it as CCAVENUE_ACCESS_CODE."
-            )
+        Returns:
+            str: The padded data.
 
-    def load_merchant_code(self, merchant_code: str = None) -> None:
-        """
-        Load a merchant code into the CCAvenue class.
-
-        :param merchant_code: The merchant code for the CCAvenue gateway.
-        """
-        if merchant_code:
-            self.__MERCHANT_CODE = merchant_code
-        else:
-            self.__MERCHANT_CODE = os.environ.get("CCAVENUE_MERCHANT_CODE")
-
-        if (
-            self.__MERCHANT_CODE is None
-            or isinstance(self.__MERCHANT_CODE, str) is False
-        ):
-            raise ValueError(
-                "You must provide a merchant code for CCAvenue or set merchant "
-                "code as an environment variable by setting it as CCAVENUE_MERCHANT_CODE."
-            )
-
-    def load_redirect_url(self, redirect_url: str) -> None:
-        """
-        Load a redirect url into the CCAvenue class.
-
-        :param redirect_url: The redirect url for the CCAvenue gateway.
-        """
-        if redirect_url:
-            self.__REDIRECT_URL = redirect_url
-        else:
-            self.__REDIRECT_URL = os.environ.get("CCAVENUE_REDIRECT_URL")
-
-        if self.__REDIRECT_URL is None or isinstance(self.__REDIRECT_URL, str) is False:
-            raise ValueError(
-                "You must provide a redirect url for CCAvenue or set redirect url "
-                "as an environment variable by setting it as CCAVENUE_REDIRECT_URL."
-            )
-        self.__form_data["redirect_url"] = self.__REDIRECT_URL
-
-    def load_cancel_url(self, cancel_url: str) -> None:
-        """
-        Load a cancel url into the CCAvenue class.
-
-        :param cancel_url: The cancel url for the CCAvenue gateway.
-        """
-        if cancel_url:
-            self.__CANCEL_URL = cancel_url
-        else:
-            self.__CANCEL_URL = os.environ.get("CCAVENUE_CANCEL_URL")
-
-        if self.__CANCEL_URL is None or isinstance(self.__CANCEL_URL, str) is False:
-            raise ValueError(
-                "You must provide a cancel url for CCAvenue or set cancel url "
-                "as an environment variable by setting it as CCAVENUE_CANCEL_URL."
-            )
-        self.__form_data["cancel_url"] = self.__CANCEL_URL
-
-    def pad(self, data: str):
-        """
-        Pad the data to be encrypted.
-
-        :param data: The str data to be encrypted.
+        Note:
+            This method uses PKCS7 padding.
         """
         length = 16 - (len(data) % 16)
-        data += chr(length) * length
-        return data
+        return data + (chr(length) * length)
 
-    def validate_request_body(self) -> None:
+    def _parse_request_body(self, request_body: Dict[str, Any]) -> str:
+        """
+        Parse the request body and prepare it for encryption.
+
+        Args:
+            request_body (Dict[str, Any]): The request body to be parsed.
+
+        Returns:
+            str: A string representation of the parsed request body.
+
+        Note:
+            This method also sets some default values from the config.
+        """
+        self.form_data = CCavenueFormData.from_dict(request_body)
+        self.form_data.merchant_id = self.config.merchant_code
+        self.form_data.redirect_url = self.config.redirect_url
+        self.form_data.cancel_url = self.config.cancel_url
+        return "&".join(
+            f"{key}={value}" for key, value in self.form_data.to_dict().items()
+        )
+
+    def _validate_request_body(self) -> None:
         """
         Validate the request body.
 
-        :param data: The request body to be validated.
+        Raises:
+            ValueError: If the amount is not a valid float.
+
+        Note:
+            This method calls the form_data's validate method and additionally
+            checks if the amount is a valid float.
         """
-        if (
-            self.__form_data["order_id"] is None
-            or isinstance(self.__form_data["order_id"], str) is False
-        ):
-            raise ValueError("You must provide an order id for CCAvenue.")
+        self.form_data.validate()
+        try:
+            float(self.form_data.amount)
+        except ValueError:
+            raise ValueError("You must provide a valid amount for CCAvenue.")
 
-        if (
-            self.__form_data["currency"] is None
-            or isinstance(self.__form_data["currency"], str) is False
-        ):
-            raise ValueError("You must provide a currency for CCAvenue.")
-
-        if self.__form_data["amount"] is None:
-            raise ValueError("You must provide an amount for CCAvenue.")
-        else:
-            try:
-                float(self.__form_data["amount"])
-            except ValueError:
-                raise ValueError("You must provide a valid amount for CCAvenue.")
-
-        if (
-            self.__form_data["redirect_url"] is None
-            or isinstance(self.__form_data["redirect_url"], str) is False
-        ):
-            raise ValueError("You must provide a valid redirect url for CCAvenue.")
-
-        if (
-            self.__form_data["cancel_url"] is None
-            or isinstance(self.__form_data["cancel_url"], str) is False
-        ):
-            raise ValueError("You must provide a valid cancel url for CCAvenue.")
-
-        if (
-            self.__form_data["billing_name"] is None
-            or isinstance(self.__form_data["billing_name"], str) is False
-        ):
-            raise ValueError("You must provide a billing name for CCAvenue.")
-
-        if (
-            self.__form_data["billing_tel"] is None
-            or isinstance(self.__form_data["billing_tel"], str) is False
-        ):
-            raise ValueError("You must provide a billing tel for CCAvenue.")
-
-        if (
-            self.__form_data["billing_email"] is None
-            or isinstance(self.__form_data["billing_email"], str) is False
-        ):
-            raise ValueError("You must provide a billing email for CCAvenue.")
-
-    def parse_request_body(self, request_body: dict) -> str:
+    def encrypt(self, data: Dict[str, Any]) -> str:
         """
-        Parse the request body to be encrypted.
+        Encrypt the request data for CCAvenue.
 
-        :param request_body: The request body to be encrypted.
+        Args:
+            data (Dict[str, Any]): The data to be encrypted.
 
-        :return: The request body in str to be encrypted.
+        Returns:
+            str: The encrypted data as a hexadecimal string.
+
+        Note:
+            This method handles the entire encryption process including
+            parsing, validation, padding, and encryption.
         """
-        self.__form_data = {**self.__form_data, **request_body}
-        form_str = f"merchant_id={self.__MERCHANT_CODE}"
-        for key, value in self.__form_data.items():
-            form_str += "&" + str(key) + "=" + str(value)
-        return form_str
+        parsed_data = self._parse_request_body(data)
+        self._validate_request_body()
+        padded_data = self._pad(parsed_data)
+        cipher = self._get_cipher()
+        encrypted = cipher.encrypt(padded_data.encode("utf-8"))
+        return hexlify(encrypted).decode("utf-8")
 
-    def __get_cipher(self) -> AES:
+    def _parse_response_body(self, response_body: Dict[str, str]) -> bytes:
         """
-        Get the cipher object.
+        Parse and validate the response body from CCAvenue.
 
-        :param key: The key to be used for encryption.
+        Args:
+            response_body (Dict[str, str]): The response body from CCAvenue.
+
+        Returns:
+            bytes: The encrypted response as bytes.
+
+        Raises:
+            ValueError: If the response body is invalid.
+
+        Note:
+            This method expects the response body to contain an 'encResp' key
+            with a string value.
         """
-        bytearrayWorkingKey = bytearray()
-        bytearrayWorkingKey.extend(map(ord, self.__WORKING_KEY))
-        return AES.new(
-            hashlib.md5(bytearrayWorkingKey).digest(),
-            AES.MODE_CBC,
-            self.__iv.encode("utf-8"),
-        )
-
-    def encrypt(self, data: dict) -> bytearray:
-        """
-        Encrypt the data to be sent to CCAvenue.
-
-        :param data: The data to be encrypted.
-
-        :return: The encrypted data.
-        """
-        data = self.parse_request_body(data)
-        self.validate_request_body()
-        data = self.pad(data)
-        enc_cipher = self.__get_cipher()
-        return hexlify(enc_cipher.encrypt(data.encode("utf-8"))).decode("utf-8")
-
-    def parse_response_body(self, response_body: str) -> str:
-        """
-        Parse the response body to be decrypted.
-
-        :param response_body: The response body to be decrypted.
-
-        :return: The decrypted response body.
-        """
-        if (
-            response_body.get("encResp") is None
-            or isinstance(response_body.get("encResp"), str) is False
-        ):
+        if not isinstance(response_body.get("encResp"), str):
             raise ValueError("You must provide a valid response body for CCAvenue.")
-        else:
-            self.__response_body = response_body
-        return unhexlify(response_body.get("encResp"))
+        self.response_body = response_body
+        return unhexlify(response_body["encResp"])
 
-    def unflatten_descrypted_data(self, data: bytearray) -> None:
+    def _unflatten_decrypted_data(self, data: bytes) -> None:
         """
-        Unflatten the decrypted data.
+        Convert the decrypted data from a flat string to a dictionary.
 
-        :param data: The decrypted data.
+        Args:
+            data (bytes): The decrypted data as bytes.
 
-        :return: The unflattened data.
+        Note:
+            This method splits the decrypted data on '&' and '=' characters
+            to create key-value pairs.
         """
-        self.__descrypted_data = dict(
+        self.decrypted_data = dict(
             item.split("=") for item in data.decode("utf-8").split("&") if item
         )
 
-    def decrypt(self, data: dict) -> str:
+    def decrypt(self, data: Dict[str, str]) -> Dict[str, str]:
         """
-        Decrypt the data received from CCAvenue.
+        Decrypt the response data from CCAvenue.
 
-        :param data: The data to be decrypted.
+        Args:
+            data (Dict[str, str]): The encrypted response data.
 
-        :return: The decrypted data.
+        Returns:
+            Dict[str, str]: The decrypted data as a dictionary.
+
+        Note:
+            This method handles the entire decryption process including
+            parsing the response body, decryption, and unflattening the data.
         """
-        encryptedText = self.parse_response_body(data)
-        dec_cipher = self.__get_cipher()
-        self.unflatten_descrypted_data(dec_cipher.decrypt(encryptedText))
-        return self.__descrypted_data
+        encrypted_text = self._parse_response_body(data)
+        cipher = self._get_cipher()
+        decrypted = cipher.decrypt(encrypted_text)
+        self._unflatten_decrypted_data(decrypted)
+        return self.decrypted_data

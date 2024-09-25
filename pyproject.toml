@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pay_ccavenue"
-version = "0.1.6"
+version = "1.0.0"
 description = "A simple library to setup payment integration with CCAvenue"
 authors = ["Kuldeep Pisda <pisdak79@gmail.com>"]
 license = "MIT"
@@ -11,13 +11,16 @@ documentation = "https://github.com/kdpisda/python-pay-ccavenue"
 keywords = ["ccavenue", "payment", "python"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.9"
 pycryptodome = "3.12.0"
 
-[tool.poetry.dev-dependencies]
-pytest = "^5.2"
-pre-commit = "^2.16.0"
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+pre-commit = "^3.8.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
