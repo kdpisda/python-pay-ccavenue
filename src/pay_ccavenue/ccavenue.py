@@ -8,6 +8,7 @@ from typing import Dict
 from Crypto.Cipher import AES
 from pay_ccavenue.models.config import CCavenueConfig
 from pay_ccavenue.models.form import CCavenueFormData
+from pay_ccavenue.models.webhook import CCavenueWebhookData
 
 
 class CCAvenue:
@@ -191,3 +192,16 @@ class CCAvenue:
         decrypted = cipher.decrypt(encrypted_text)
         self._unflatten_decrypted_data(decrypted)
         return self.decrypted_data
+
+    def process_webhook(self, response_body: Dict[str, str]) -> CCavenueWebhookData:
+        """
+        Process and validate the webhook/notification data from CCAvenue.
+
+        Args:
+            response_body (Dict[str, str]): The response body containing 'encResp'.
+
+        Returns:
+            CCavenueWebhookData: The decrypted and parsed data object.
+        """
+        decrypted_dict = self.decrypt(response_body)
+        return CCavenueWebhookData.from_dict(decrypted_dict)
