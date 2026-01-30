@@ -108,3 +108,13 @@ def test_decrypt(ccavenue_instance, monkeypatch):
     decrypted_data = {k: v.rstrip("\r") for k, v in decrypted_data.items()}
 
     assert decrypted_data == {"key1": "value1", "key2": "value2", "key3": "value3"}
+
+
+def test_get_cipher(ccavenue_instance):
+    """Test _get_cipher logic directly without mocking."""
+    cipher = ccavenue_instance._get_cipher()
+    assert cipher is not None
+    # We can't easily check the key inside the cipher object in PyCryptodome,
+    # but successful creation is what we want to test.
+    # The block size should be AES.block_size (16)
+    assert cipher.block_size == 16
