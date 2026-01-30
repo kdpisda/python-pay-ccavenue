@@ -68,6 +68,22 @@ response_data = {
 decrypted_data = ccavenue.decrypt(response_data)
 ```
 
+5. Handle Webhook/Notification:
+
+```python
+# In your webhook endpoint
+webhook_payload = request.form  # Get the POST data
+webhook_data = ccavenue.process_webhook(webhook_payload)
+
+if webhook_data.order_status == "Success":
+    print(f"Order {webhook_data.order_id} was successful")
+    print(f"Tracking ID: {webhook_data.tracking_id}")
+    print(f"Bank Ref: {webhook_data.bank_ref_no}")
+elif webhook_data.risk_status == "High":
+    print(f"Warning: High risk transaction {webhook_data.tracking_id}")
+    print(f"Reason: {webhook_data.risk_reason}")
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -102,6 +118,7 @@ ccavenue = CCAvenue(
 
 - `encrypt(data: Dict[str, Any]) -> str`: Encrypts the payment data
 - `decrypt(data: Dict[str, str]) -> Dict[str, str]`: Decrypts the response data
+- `process_webhook(response_body: Dict[str, str]) -> CCavenueWebhookData`: Decrypts and processes webhook data
 
 ### `CCavenueFormData` Class
 
